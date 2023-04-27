@@ -16,5 +16,3 @@ There is a stress plot for Sigma a and Sigma m <br />
 Then, the user can open the diameter figure and see each geometry change in the shaft.<br />
 Finally the there is a plot for yielding and fatigue safety facotrs along the shaft. <br />
 Process for viewing outputs is the same for all three shafts and the .mlx file will only have to be ran once. <br />
-
-
