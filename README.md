@@ -1,5 +1,5 @@
 # Shaft-design-team-6
-All user input is within ShaftDesignOptimization.mlx <br />
+Shaft.m has been updated please insure your file is up to date. All user input is within ShaftDesignOptimization.mlx <br />
 The user should first verify inputs of shaft specs, material, external loadings, gear specs. <br />
 -For shaft geo, the x position that a diameter starts at is the first index then the diameter relation.<br/>
 Note that for the first shaft the torque is applied at zero to the gear position and same for the output shaft.<br/>
