@@ -429,7 +429,7 @@ classdef shaft < handle
             xlim([0.1,obj.geo.length])
 
             figure
-            D =1;
+            D =obj.D;
             plot(x,subs(obj.sigma_a))
             hold on
             plot(x,subs(obj.sigma_m))
