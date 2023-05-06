@@ -8,6 +8,7 @@ classdef bearing < handle
         Y
         axial
         name
+        Radial
     end
 
     methods

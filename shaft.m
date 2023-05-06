@@ -73,11 +73,6 @@ classdef shaft < handle
 
         end
 
-        function [] = solve(obj,D)
-
-            obj.presolve();
-        end
-
         function presolve(obj,K)
             obj.K = K;
             obj.calc_sum_eq();
@@ -96,9 +91,13 @@ classdef shaft < handle
                 %% Starting Shaft Diameter
                 nf=0;i=0;
                 while nf<obj.Nf
-                    D = 0.1 +i*0.05;
+                    D = 1 +i*0.05;
                     nf = min(subs(obj.nf));
+                    if nf<2
+                        i=i+3;
+                    else
                     i=i+1;
+                    end
                 end
                 D1 = D;   %Fatigue Diameter
                 nfmin = min(subs(obj.nf))
@@ -107,9 +106,13 @@ classdef shaft < handle
                 i=0;
                 clear D
                 while ny<obj.Ny
-                    D = 0.1 +i*0.05;
+                    D = 1 +i*0.05;
                     ny = min(subs(obj.ny));
+                    if ny<2
+                        i=i+3;
+                    else
                     i=i+1;
+                    end
                 end
                 D2 = D;   %Yielding Diameter
                 nymin = min(subs(obj.ny))
@@ -144,17 +147,13 @@ classdef shaft < handle
                 obj.D =D;
                 true=zeros(1,length(index));
                 for i = 1:length(index)
-                    
                     j=0;
-                    tic
                     while true(i)==0
-                        
                             v = index(i);
                             bigD = max(eval(obj.geo.D(v-3:v+3))); %Larger diameter
                             d(i) =    min(eval(obj.geo.D(v-3:v+3)));
                             h(i) = (bigD - d(i))/2;
                             r = (h(i)/20)+0.025*j;
-                        
                         %% Kf & Kfs
                         if h(i)/r <2
                             Kt = 1.1490*(h(i)/r)^(1/2) - (0.0860*h(i))/r - ...
@@ -168,15 +167,12 @@ classdef shaft < handle
                                 (4*h(i)^2*((0.8620*h(i))/r - 4.8340*(h(i)/r)^(1/2) + 7.3740))/bigD^2 - ...
                                 (2*h(i)*((0.2570*h(i))/r - 0.9580*(h(i)/r)^(1/2) + 3.7900))/bigD + 1.2250;
                         end
-
                         ab = 0.246-3.08e-3*obj.Sut+1.51e-5*obj.Sut^2-2.67e-8*obj.Sut^3;
                         Kf = 1+ ((Kt -1)/(1+((ab)/sqrt(r)))); % 323 shigley
-
                         Kts = 0.6800*(h(i)/r)^(1/2) - (0.0530*h(i))/r - (2*h(i)*(1.8200*(h(i)/r)^(1/2)...
                             - (0.5170*h(i))/r + 0.4930))/bigD + (4*h(i)^2*(0.9080*(h(i)/r)^(1/2) - ...
                             (0.5290*h(i))/r + 1.6210))/bigD^2 + (8*h(i)^3*(0.2320*(h(i)/r)^(1/2) + ...
                             (0.0650*h(i))/r - 1.0810))/bigD^3 + 0.9530;
-
                         as = 0.190-2.51e-3*obj.Sut+1.35e-5*obj.Sut^2-2.67e-8*obj.Sut^3;
                         Kfs= 1+ ((Kts -1)/(1+((as)/(sqrt(r)))));
                         %% Sigmas
@@ -193,35 +189,21 @@ classdef shaft < handle
                         if obj.ny(index(i))<=obj.Ny_fillet || obj.nf(index(i))<=obj.Nf_fillet
                             j=j+1;
                         else
-                            
                             if r/d(i) < 0.4 && h(i)/r > 0.25
                                 allgood(i) = 0;
                                 true(i) =1;
                                 obj.filletRadi(i)=r;
-                                
                             elseif r==0
                                 allgood(i) =0;
                                 true(i) =1;
                                 obj.filletRadi(i)=r;
-                                
                             else
                                 true(i)=1;
-                                
-                                
                             end
-                            
                         end
-
                     end
-                    
                 end
-                % if sum(allgood) ==0
-                %     break
-                % else
-                %     k=k+1;
-                % end
                 k=k+1;
-                
             end
             for i = 1:length(index)
             fprintf('Iteration for fillet radius at point %.3f is complete, Radi of fillet is %.3f \r'...
@@ -259,6 +241,7 @@ classdef shaft < handle
                 obj.step(index(s)) = obj.geo.K_points(s);
             end
             obj.diameter = linspace(lb,ub,N);
+            
             for k = 1:N
                 for i = 1:obj.geo.length*len
                     syms x D
@@ -381,11 +364,13 @@ classdef shaft < handle
             [obj.bearing(1).X,obj.bearing(2).X] = solve(eqnx,varsx);
             [obj.bearing(1).Y,obj.bearing(2).Y] = solve(eqny,varsy);
 
+            obj.bearing(1).Radial = sqrt(obj.bearing(1).X^2+obj.bearing(1).Y^2);
+            obj.bearing(2).Radial = sqrt(obj.bearing(2).X^2+obj.bearing(2).Y^2);
+
         end
 
         function [] = Shear(obj)
             syms x
-
             for i = 1:length(obj.bearing)
                 obj.Qx = obj.Qx + obj.bearing(i).X * H(x-obj.bearing(i).pos);
                 obj.Qy = obj.Qy + obj.bearing(i).Y * H(x-obj.bearing(i).pos);
@@ -405,10 +390,11 @@ classdef shaft < handle
             obj.M = double(sqrt(subs(obj.My).^2+subs(obj.Mz).^2));
 
         end
-
+        
         function plot(obj)
             syms x
             figure
+            
             subplot(1,2,1)
             fplot(x,obj.Qx,[0,obj.geo.length])
             title(['X-Z plane, Shear  ',obj.name])
@@ -420,16 +406,24 @@ classdef shaft < handle
             title(['Y-Z plane, Shear  ',obj.name])
             ylim('padded')
             xlim([0.1,obj.geo.length])
-
+            
             figure
+            subplot(5,1,1)
+            
             x = obj.x;
             plot(x,obj.M)
             title(['Combined moment  ',  obj.name])
             ylim('padded')
             xlim([0.1,obj.geo.length])
+            axis('padded')
 
-            figure
-            D =obj.D;
+            subplot(5,1,2)
+            plot(x,obj.T)
+            title('Torsion')
+            axis('padded')
+
+            subplot(5,1,3)
+            D = obj.D;
             plot(x,subs(obj.sigma_a))
             hold on
             plot(x,subs(obj.sigma_m))
@@ -437,13 +431,15 @@ classdef shaft < handle
             xlim([0,obj.geo.length])
             title('Stress')
             legend('Sigma_a','Sigma_m')
+            axis('padded')
             hold off
 
 
-            figure
+            subplot(5,1,4)
 
             plot(x,eval(obj.geo.D)/2)
-            title('Geometry, D(in)')
+            title('Geometry, R(in)')
+            axis('padded')
 
             figure
             plot(x,obj.ny,'o')
@@ -455,6 +451,7 @@ classdef shaft < handle
             legend('Ny','Nf')
             ylim([0,8])
             xlim([0,obj.geo.length])
+            
 
 
 
@@ -505,4 +502,3 @@ classdef shaft < handle
         end
     end
 end
-
